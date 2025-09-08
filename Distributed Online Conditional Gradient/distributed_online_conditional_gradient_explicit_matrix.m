@@ -5,13 +5,19 @@
 
 % performance_metric : 1 --> Classic Individual Regret; 2 --> Average
 % Individual Regret
-function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric,verbose,sigma)
-   % Setting the network topology ----------------------------------------
-    type = 'spectral_relaxed'; % The topology is defined by the spectrum of Consensus matrix 
+function [X_output,F_output,G_output,Z_output,V_output,Fu_output,Gu_output,compute_step_size,sigmait,wc]=distributed_online_conditional_gradient_explicit_matrix(T,D,L,performance_metric,verbose,mat)
+    % Setting the network topology ----------------------------------------
+    n = size(mat,1);
+    type = 'exact'; % The topology is defined by the spectrum of Consensus matrix 
     time_varying_mat = 0; % The communication is supposed static
     returnOpt = 0;
     equalStart = 0; % Estimates are different from each other
-    mat = [-sigma,sigma];
+    if n>1
+        evs = sort(eig(mat),'descend'); % Computing and sorting in descending order the eigenvalues of the communication matrix 
+        sigma = evs(2); % sigma is the second largest eigenvalues 
+    else
+        sigma = 1;
+    end
 
     % Set up general problem parameters -----------------------------------
     % In the paper step-sizes are indexes wrt the number of agents 'eta_i'
@@ -94,6 +100,7 @@ function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric
             V(i,t) = {linearoptimization_step(DIR{i,t},id_operator)};
             %%%%%%%%
             % Descent step
+            % FROM THE PAPER: X(i,t+1) = X{i,t} + mix_val * (V{i,t}-X{i,t})}; 
             % Debugging:
             X(i,t+1) = {X{i,t} + mix_val * (V{i,t}-X{i,t})};  
             %%%%%%%%
@@ -121,8 +128,9 @@ function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric
     fixed_agent_j = 1; % The regret is the same regardless the agent.
     F_sum_fixed = 0;
     F_saved_fixed_agent = cell(n,T); % Each cell contains F_i,t(x_t^j)
+    G_saved_fixed_agent = cell(n,T);
     fs_t = cell(n,T); % Each cell contains F_i,t(u)
-    %gs_t = cell(n,T); % Each cell contains subgradient F_{i,t}(u) 
+    gs_t = cell(n,T); % Each cell contains subgradient F_{i,t}(u) 
     fs = 0; % sum_i,t f_it(u)
     for t=1:T
         switch performance_metric
@@ -130,18 +138,16 @@ function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric
                 % Setting the performance metric -------------------------------
                 % Each private function FI is evaluated in X_t^j, so X_t^j is
                 % repeated n times (number of agents).
-                [~,F_saved_fixed_agent(:,t)] = LocalOracles(FI(:,t),num2cell(repmat(X{fixed_agent_j,t},1,n)));
+                [G_saved_fixed_agent(:,t),F_saved_fixed_agent(:,t)] = LocalOracles(FI(:,t),num2cell(repmat(X{fixed_agent_j,t},1,n)));
             case 'Averaged_Individual_Regret' % NO INDIVIDUAL AVERAGE REGRET---------------------------------
                 % Here it's the same thing than in case 1 bu with Xaveraged
                 % instead of X
-                [~,F_saved_fixed_agent(:,t)] = LocalOracles(FI(:,t),num2cell(repmat(Xaveraged{fixed_agent_j,t},1,n)));
-            otherwise 
-                error("Unknown Perfomance Metric");
+                [G_saved_fixed_agent(:,t),F_saved_fixed_agent(:,t)] = LocalOracles(FI(:,t),num2cell(repmat(Xaveraged{fixed_agent_j,t},1,n)));
         end
         % The total cost is augmented
         F_sum_fixed = F_sum_fixed + sumcell(F_saved_fixed_agent(:,t)); 
         % The cost in u is cummulated too
-        [~, fs_t(:,t)] = LocalOracles(FI(:,t),num2cell(repmat(u,1,n)));  
+        [gs_t(:,t), fs_t(:,t)] = LocalOracles(FI(:,t),num2cell(repmat(u,1,n)));  
         fs = fs + sumcell(fs_t(:,t));
     end
     P.PerformanceMetric(F_sum_fixed - fs);
@@ -161,10 +167,138 @@ function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric
 
    traceHeuristicActivated = 0;
    P.TraceHeuristic(traceHeuristicActivated);
-   out = P.solve(verbose);
+   out = P.solve(1);
 
    %if verbose, out, end
 
     % Evaluate the output ---------------------------------------------
     wc = out.WCperformance;
+
+    % Construct an approximation of the worst averaging matrix that links the solutions X and Y
+    [Ah.X,Ah.r,Ah.status] = A.estimate(0);
+    if verbose 
+        % Recovering the worst-case averaging matrix
+        fprintf('Estimation of the worst-case averging matrix:\n');
+        disp(Ah.X);
+        fprintf("Residual norm of the estimated averaging matrix: %d \n",Ah.r);
+        disp(Ah.status);
+        % Recovering the estimates
+        fprintf("Computed estimates are:\n");
+        normXIT = cell(n,T+1);
+        for t=1:T
+            for i=1:n
+                normXIT(i,t) = {norm(double(X{i,t}))};
+            end
+        end
+        fprintf("norm(X(i,t))=\n");
+        disp(cell2mat(normXIT)),
+        if traceHeuristicActivated
+            for t=1:T
+                for i=1:n
+                    fprintf("X{%d,%d}=\n",i,t);
+                    disp(double(X{i,t}));
+                end
+            end
+        end
+        %%%%%%%%%%%%%%%%%%
+        normVIT = cell(n,T);
+        for t=1:T
+            for i=1:n
+                 normVIT(i,t) = {norm(double(V{i,t}))};
+            end
+        end
+        fprintf("norm(V(i,t))=\n");
+        disp(cell2mat(normVIT));
+        %%%%%%%%%%%%%%%%%%
+        normDirIT = cell(n,T);
+        for t=1:T
+            for i=1:n
+                 normDirIT(i,t) = {norm(double(DIR{i,t}))};
+            end
+        end
+        fprintf("norm(Dir(i,t))=\n");
+        disp(cell2mat(normDirIT));
+        %%%%%%%%%%%%%%%%%
+        normZIT = cell(n,T);
+        for t=1:T
+            for i=1:n
+                 normZIT(i,t) = {norm(double(Z{i,t}))};
+            end
+        end
+        fprintf("norm(Z(i,t))=\n");
+        disp(cell2mat(normZIT));
+        %%%%%%%%%%%%%%%%%%
+        normGIT = cell(n,T+1);
+        for t=1:T
+            for i=1:n
+                 normGIT(i,t) = {norm(double(G_saved{i,t}))};
+            end
+        end
+        fprintf("norm(G(i,t))=\n");
+        disp(cell2mat(normGIT));
+        %%%%%%%%%%%%%%%%%%
+        normGIT_fixed_agent = cell(n,T+1);
+        for t=1:T
+            for i=1:n
+                 normGIT_fixed_agent(i,t) = {norm(double(G_saved_fixed_agent{i,t}))};
+            end
+        end
+        fprintf("norm(G_i,t(x_j,t))=\n");
+        disp(cell2mat(normGIT_fixed_agent));
+        %%%%%%%%%%%%%%%%%%
+        fprintf("Local costs \n");
+        % Displaying incurred costs for each agent in its estimate
+        FIT = cell(n,T);
+        for i=1:n
+            for t=1:T
+                FIT(i,t) = {double(F_saved{i,t})};
+            end
+        end
+        fprintf("Costs for each agent in its estimate:\n --> f_it(x_it)=\n");
+        % Displaying
+        disp(cell2mat(FIT));
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        FIT_indj = cell(n,T);
+        for i=1:n
+            for t=1:T
+                FIT_indj(i,t) = {double(F_saved_fixed_agent{i,t})};
+            end
+        end
+        fprintf("Costs for each agent in its agent j's estimates:\n --> f_it(x_jt)=\n");
+        disp(cell2mat(FIT_indj));
+        %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+        FS_u = cell(n,T);
+        fprintf("Costs for each agent in its agent u:\n --> f_it(u)=\n");
+        for i=1:n
+            for t=1:T
+                FS_u(i,t) = {double(fs_t{i,t})};
+            end
+        end
+        disp(cell2mat(FS_u));
+        % Verifying that distances between estimates are bounded by D^2
+        ok_for_the_diameter = true;
+        for t=1:T
+            for tau=1:T
+                for i=1:n
+                    for j=1:n
+                        %fprintf("X{%d,%d}-X{%d,%d}=%d <= %d \n ",i,t,j,tau,norm(double(X{i,t}-X{j,tau})),D);
+                        %fprintf("Checking diameter: %d \n",(norm(double(X{i,t}-X{j,tau})) <= D+0.001)); 
+                        ok_for_the_diameter = ok_for_the_diameter && (norm(double(X{i,t}-X{j,tau})) <= D);
+                    end
+                end
+            end
+        end
+    fprintf("Ok for diameter ? %d \n",ok_for_the_diameter);
+    fprintf("The second largest eigenvalue is: sigma=%f",sigma);
+    out % Displaying the output of PEP
+    end
+
+    % OUTPUT 
+    X_output = cellfun(@double,X,'UniformOutput',false);
+    F_output = cellfun(@double,F_saved,'UniformOutput',false);
+    G_output = cellfun(@double,G_saved,'UniformOutput',false);
+    Z_output = cellfun(@double,Z,'UniformOutput',false);
+    V_output = cellfun(@double,V,'UniformOutput',false);
+    Fu_output= cellfun(@double,fs_t,'UniformOutput',false);
+    Gu_output= cellfun(@double,gs_t,'UniformOutput',false);
 end

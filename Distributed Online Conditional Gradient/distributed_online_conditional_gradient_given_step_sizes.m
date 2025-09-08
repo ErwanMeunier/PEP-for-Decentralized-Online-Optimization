@@ -5,7 +5,7 @@
 
 % performance_metric : 1 --> Classic Individual Regret; 2 --> Average
 % Individual Regret
-function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric,verbose,sigma)
+function [wc]=distributed_online_conditional_gradient_given_step_sizes(T,D,L,n,performance_metric,verbose,sigma,compute_step_size)
    % Setting the network topology ----------------------------------------
     type = 'spectral_relaxed'; % The topology is defined by the spectrum of Consensus matrix 
     time_varying_mat = 0; % The communication is supposed static
@@ -16,7 +16,7 @@ function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric
     % Set up general problem parameters -----------------------------------
     % In the paper step-sizes are indexes wrt the number of agents 'eta_i'
     % instead of the current time-step
-    compute_step_size = @(i) (1-sigma)*D / (2*(sqrt(n)+1+(sqrt(n)-1)*sigma)*L*T^(3/4));
+    % Step-size already given: compute_step_size = @(i) (1-sigma)*D / (2*(sqrt(n)+1+(sqrt(n)-1)*sigma)*L*T^(3/4));
     sigmait = @(i,t) 1/sqrt(t); 
     
     % Initialize an empty PEP
@@ -77,7 +77,7 @@ function [wc]=distributed_online_conditional_gradient(T,D,L,n,performance_metric
     for t = 1:T
         for i=1:n
             % Computing the step-size and the mixing coefficient sigmait
-            eta = compute_step_size(i); % in the paper eta depends on the number of agents
+            eta = compute_step_size(t); % (in the paper eta depends on the number of agents)
             mix_val = sigmait(i,t);
             if verbose
                 fprintf("i=%d \n",i);

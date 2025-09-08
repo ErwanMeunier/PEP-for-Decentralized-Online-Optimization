@@ -4,16 +4,16 @@
 % in IEEE Transactions on Knowledge and Data Engineering, vol. 25, no. 11, pp. 2483-2493, Nov. 2013, 
 % doi: 10.1109/TKDE.2012.191.
 
-% Input: 
-% T: Number of iterations
-% D: Diameter over the compact set
-% L: Lipschitz coefficient
+% T: Number of iterations of the gradient method
+% m: Number of agents
+% F: Diameter over the compact set
 % mu: Strong convexity constant for the objective function
-% n: Number of agents
-% performance_metric: 1 --> Classic Individual Regret; 2 --> Averaged Individual Regret
-% verbose: 0 --> No verbose, 1 --> Full verbose
-% sigma:  Bound for the second-largest eigenvalue of the communication
-% network
+% L: Lipschitz coefficient
+% mat_vec: Communication Matrix (if fixed matrix) / Matrix range (if spectral).
+% mat_vec is given under vector format.
+% relaxed)
+
+% Example for calling the function: distributed_autonomous_online_learning(20,2,0.5,1,1,'spectral_relaxed',[0,1],0,1)
 
 function [wc]=distributed_autonomous_online_learning(T,D,L,mu,n,performance_metric,verbose,sigma)
    % Setting the network topology ----------------------------------------
@@ -60,6 +60,7 @@ function [wc]=distributed_autonomous_online_learning(T,D,L,mu,n,performance_metr
     X_hat = cell(n, T);         % X_hat = A * X - eta_t*gradient(F(X))
     X = cell(n, T+1);           % FEASIBLE: local estimates = Proj(Z,id(H))
    
+    %F_saved = cell(m,T+1); NO NEED TO SAVE IT
     G_saved = cell(n,T+1);
 
     % Set up the starting points and initial conditions -------------------
@@ -125,9 +126,9 @@ function [wc]=distributed_autonomous_online_learning(T,D,L,mu,n,performance_metr
 
     if verbose, out, end
 
-    % Evaluate the output ---------------------------------------------
+    % (7) Evaluate the output ---------------------------------------------
     wc = out.WCperformance;
-
-    % Construct an approximation of the worst averaging matrix that links the solutions X and Y
+    %double(X{1,1})
+    % (8) Construct an approximation of the worst averaging matrix that links the solutions X and Y
     [Ah.X,Ah.r,Ah.status] = A.estimate(0);
 end
