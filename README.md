@@ -1,8 +1,6 @@
 # Distributed Online Optimization Algorithms
 
-This repository provides MATLAB and Julia implementations of several **decentralized online optimization (DOO) algorithms**, including Distributed Autonomous Online Learning (DAOL), Distributed Online Conditional Gradient (DOCG), and Distributed Online Mirror Descent (DOMD).  
-
-Beyond implementation, the repository leverages the **Performance Estimation Problem (PEP) framework** to compute **tight worst-case performance bounds** for these methods. This allows practitioners and researchers to (i) benchmark algorithms more accurately, (ii) avoid overly conservative analytical bounds that can mislead method selection, and (iii) improve algorithms through step-size tuning and design, achieving significantly better worst-case regret guarantees.  
+Beyond implementation, the repository leverages the **Performance Estimation Problem (PEP) framework** to compute **tight worst-case performance bounds** of several **decentralized online optimization (DOO) algorithms**, including Distributed Autonomous Online Learning (DAOL), Distributed Online Conditional Gradient (DOCG), and Distributed Online Mirror Descent (DOMD). This allows practitioners and researchers to (i) benchmark algorithms more accurately, (ii) avoid overly conservative analytical bounds that can mislead method selection, and (iii) improve algorithms through step-size tuning and design, achieving significantly better worst-case regret guarantees.  
 
 The code is meant to accompany our forthcoming paper, serving as a practical resource for reproducing experiments and exploring method improvements.  
 
@@ -12,76 +10,32 @@ The code is meant to accompany our forthcoming paper, serving as a practical res
 
 In **distributed online optimization**, multiple agents cooperate to make sequential decisions while only observing information revealed over time.  
 Each agent updates its local model using limited feedback, communicates with neighbors, and together they aim to minimize global regret.  
-The methods implemented here explore different algorithmic strategies (learning rates, mirror descent, conditional gradients) to achieve efficiency in this setting.  
+The methods implemented here explore different algorithmic strategies (gradient descent, mirror descent, conditional gradients) to achieve efficiency in this setting.  
 
 ---
 
 ## Implemented Methods
 
 - **DAOL – Distributed Autonomous Online Learning**  
-  MATLAB implementations of distributed online learning with different step-size schemes.
 
 - **DOMD – Distributed Mirror Descent for Online Composite Optimization**  
-  MATLAB and Julia implementations, including performance estimation problems (PEP) and primal bound simulations.
 
 - **DOCG – Distributed Online Conditional Gradient**  
-  MATLAB implementation of conditional gradient methods in the distributed online setting.
-
----
-
-## Repository Structure
-
-```
-LICENSE
-Distributed Autonomous Online Learning/
-  ├─ bound_daol.m
-  ├─ distributed_autonomous_online_learning.m
-  └─ distributed_autonomous_online_learning_given_step_sizes.m
-
-Distributed Mirror Descent for Online Composite Optimization/
-  ├─ PEP/
-  │   ├─ bound_DOMD.m
-  │   └─ distributed_mirror_descent_online_optimization.m
-  └─ Primal bound for the worst-case function of DOMD/
-      ├─ generating_doubly_stochastic_matrices.jl
-      └─ Simulating_DOMD_withoutPEP.jl
-
-Distributed Online Conditional Gradient/
-  ├─ bound_docg.m
-  └─ distributed_online_conditional_gradient.m
-
-Method design/
-  └─ design_DAOL.m
-```
 
 ---
 
 ## Requirements
 
 - **MATLAB** (R2020a or later recommended)  
-- **Julia** (v1.7 or later)  
-  - Required Julia packages:
-    - `LinearAlgebra`
-    - `Random`
-    - (others will be listed in the corresponding `.jl` files)
-
+- **PESTO TOOLBOX** --> https://github.com/PerformanceEstimation/Performance-Estimation-Toolbox/
+  Some PESTO files must be changed to include the support of Strongly Convex Functions with Bounded Gradients (1) not directly available in the PESTO toolbox.
+  You can use the `PESTO_fork_standalone.zip` which is a fork of the PESTO toolbox including the support of (1).
 ---
 
 ## Usage
 
 ### MATLAB examples
-Run any of the provided `.m` scripts in MATLAB. For instance:
-```matlab
->> distributed_autonomous_online_learning
-```
-
-### Julia examples
-From the `Primal bound for the worst-case function of DOMD` folder, run:
-```bash
-julia Simulating_DOMD_withoutPEP.jl
-```
-
----
+The `dedicated_simulations.m` provides a way of directly analyzing DOO algorithms by using PESTO.
 
 ## License
 
@@ -94,10 +48,11 @@ This project is licensed under the terms of the [LICENSE](./LICENSE) file.
 If you use this code in your research, please cite the accompanying paper:
 
 ```
-@article{your_paper_2025,
-  title   = {Title of Your Paper},
-  author  = {Author Names},
-  journal = {Journal/Conference},
+@article{PEP_DOO_meunier_hendrickx,
+  title   = {Several Performance Bounds on Decentralized Online Optimization are
+Highly Conservative and Potentially Misleading},
+  author  = {Erwan Meunier, Julien M. Hendrickx},
+  journal = {64th IEEE Conference on Decision and Control},
   year    = {2025},
 }
 ```
