@@ -28,7 +28,7 @@ The methods implemented here explore different algorithmic strategies (gradient 
 
 - **MATLAB** (R2020a or later recommended)  
 - **PESTO TOOLBOX** --> https://github.com/PerformanceEstimation/Performance-Estimation-Toolbox/
-  Some PESTO files must be changed to include the support of Strongly Convex Functions with Bounded Gradients (1) not directly available in the PESTO toolbox.
+  Some **PESTO files must be changed** to include the support of Strongly Convex Functions with Bounded Gradients (1) not directly available in the PESTO toolbox.
   You can use the `PESTO_fork_standalone.zip` which is a fork of the PESTO toolbox including the support of (1).
 ---
 
