@@ -48,11 +48,13 @@ This project is licensed under the terms of the [LICENSE](./LICENSE) file.
 If you use this code in your research, please cite the accompanying paper:
 
 ```
-@article{PEP_DOO_meunier_hendrickx,
-  title   = {Several Performance Bounds on Decentralized Online Optimization are
-Highly Conservative and Potentially Misleading},
-  author  = {Erwan Meunier, Julien M. Hendrickx},
-  journal = {64th IEEE Conference on Decision and Control},
-  year    = {2025},
+@misc{meunier2025performanceboundsdecentralizedonline,
+      title={Several Performance Bounds on Decentralized Online Optimization are Highly Conservative and Potentially Misleading}, 
+      author={Erwan Meunier and Julien M. Hendrickx},
+      year={2025},
+      eprint={2509.06466},
+      archivePrefix={arXiv},
+      primaryClass={math.OC},
+      url={https://arxiv.org/abs/2509.06466}, 
 }
 ```
